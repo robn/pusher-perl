@@ -1,0 +1,79 @@
+#!/usr/bin/env perl
+
+use 5.010;
+use warnings;
+use strict;
+
+use AnyEvent::Socket;
+use AnyEvent::Handle;
+use Protocol::WebSocket::Handshake::Client;
+use Protocol::WebSocket::Frame;
+use JSON;
+use Data::Dumper;
+
+my $app_key = "XXX";
+my $channel = "test_channel";
+
+my $json = JSON->new;
+
+my $h;
+
+sub init {
+    my $hc = Protocol::WebSocket::Handshake::Client->new(url => "ws://ws.pusherapp.com:80/app/$app_key?protocol=6");
+    my $f = Protocol::WebSocket::Frame->new;
+
+    $h = AnyEvent::Handle->new(connect => ["ws.pusherapp.com", 80],
+
+        on_connect => sub {
+            my ($h) = @_;
+            say "connected to pusher";
+            $h->push_write($hc->to_string);
+        },
+
+        on_read => sub {
+            my ($h) = @_;
+
+            my $chunk = $h->{rbuf};
+            $h->{rbuf} = undef;
+
+            if (!$hc->is_done) {
+                $hc->parse($chunk);
+            }
+
+            $f->append($chunk);
+            while (my $msg = $f->next) {
+                my $d = $json->decode($msg);
+                given ($d->{event}) {
+
+                    when ("pusher:connection_established") {
+                        say "subscribing to events";
+                        $h->push_write(
+                            $f->new($json->encode({
+                                event => "pusher:subscribe",
+                                data => {
+                                    channel => $channel,
+                                },
+                            }))->to_bytes
+                        );
+                    }
+
+                    default {
+                        print "got event: ", Dumper $d;
+                    }
+
+                }
+            }
+        },
+
+        on_eof => sub {
+            my ($h) = @_;
+
+            say "lost connection, reconnecting";
+            init();
+        }
+    );
+}
+
+my $c = AnyEvent->condvar;
+init();
+$c->wait;

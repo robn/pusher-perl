@@ -1,0 +1,17 @@
+Pusher for Perl
+
+These are sample programs to show how to use Pusher (http://pusher.com/) from
+Perl.
+
+pusher-client sends events to a single Pusher channel.
+
+pusher-listener implements a WebSocket client that subscribes to a channel and
+then dumps events that arrive.
+
+This is just a starting point. You'll need to add error checks and recovery at
+least, and probably a whole lot more. I'd love it if someone would turn these
+into proper modules sometime (particularly the listener). You'll need a decent
+understanding of AnyEvent and the Pusher API reference handy. But its ok, you
+can do it!
+
+License: Public domain or CC0, as you like.

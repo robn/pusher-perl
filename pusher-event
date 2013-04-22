@@ -1,0 +1,45 @@
+#!/usr/bin/env perl
+
+use 5.010;
+use warnings;
+use strict;
+
+use LWP::UserAgent;
+use JSON;
+use URI;
+use URI::QueryParam;
+use Digest::MD5 qw(md5_hex);
+use Digest::SHA qw(hmac_sha256_hex);
+
+my $app_id      = "XXX";
+my $auth_key    = "XXX";
+my $auth_secret = "XXX";
+
+my $json = JSON->new;
+
+my $body = $json->encode({
+    name    => "my_event",
+    data    => "my_data",
+    channel => "test_channel",
+});
+
+my $uri = URI->new("http://api.pusherapp.com/apps/$app_id/events");
+
+# sorted by key, important for the signature
+$uri->query_param(auth_key => $auth_key);
+$uri->query_param(auth_timestamp => time);
+$uri->query_param(auth_version => "1.0");
+$uri->query_param(body_md5 => md5_hex($body));
+
+my $payload = "POST\n".$uri->path."\n".$uri->query;
+my $signature = hmac_sha256_hex($payload, $auth_secret);
+$uri->query_param(auth_signature => $signature);
+
+my $ua = LWP::UserAgent->new;
+my $res = $ua->post($uri,
+    "Content-type" => "application/json",
+    Content => $body,
+);
+
+say $res->status_line;
+say $res->as_string unless $res->is_success;
