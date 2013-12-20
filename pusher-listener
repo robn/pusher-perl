@@ -13,16 +13,31 @@ use Data::Dumper;
 
 my $app_key = "XXX";
 my $channel = "test_channel";
+my $ssl=0;
 
 my $json = JSON->new;
 
 my $h;
 
+my ($port, $prot, $tls);
+
+if ($ssl) {
+    $port=443;
+    $prot="wss";
+    $tls="connect";
+} else {
+    $port=80;
+    $prot="ws";
+    $tls=undef;
+}
+
 sub init {
-    my $hc = Protocol::WebSocket::Handshake::Client->new(url => "ws://ws.pusherapp.com:80/app/$app_key?protocol=6");
+    my $hc = Protocol::WebSocket::Handshake::Client->new(url => "$prot://ws.pusherapp.com/app/$app_key?protocol=6");
     my $f = Protocol::WebSocket::Frame->new;
 
-    $h = AnyEvent::Handle->new(connect => ["ws.pusherapp.com", 80],
+    $h = AnyEvent::Handle->new(connect => ["ws.pusherapp.com", $port],
+        tls => $tls,
+        tls_ctx => {verify=>0},
 
         on_connect => sub {
             my ($h) = @_;
