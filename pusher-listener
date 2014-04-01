@@ -56,6 +56,11 @@ sub init {
             }
 
             $f->append($chunk);
+            if ($f->is_ping()) {
+                $h->push_write(
+                    $f->new(buffer => "", type => "pong")->to_bytes
+                );
+            }
             while (my $msg = $f->next) {
                 my $d = $json->decode($msg);
                 given ($d->{event}) {
