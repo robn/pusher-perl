@@ -1,3 +1,6 @@
+Deprecated: Use https://metacpan.org/pod/WWW::Pusher instead.
+
+
 Pusher for Perl
 
 These are sample programs to show how to use Pusher (http://pusher.com/) from
