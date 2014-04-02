@@ -70,6 +70,7 @@ sub init {
                 } or do {
                     my $e = $@;
                     print "error: $e\n";
+                    next;
                 };
                 given ($d->{event}) {
 
