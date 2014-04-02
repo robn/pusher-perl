@@ -38,6 +38,8 @@ sub init {
     $h = AnyEvent::Handle->new(connect => ["ws.pusherapp.com", $port],
         tls => $tls,
         tls_ctx => {verify=>0},
+        keepalive => 1,
+        wtimeout => 50,
 
         on_connect => sub {
             my ($h) = @_;
@@ -62,7 +64,13 @@ sub init {
                 );
             }
             while (my $msg = $f->next) {
-                my $d = $json->decode($msg);
+                my $d;
+                eval {
+                    $d = $json->decode($msg);
+                } or do {
+                    my $e = $@;
+                    print "error: $e\n";
+                };
                 given ($d->{event}) {
 
                     when ("pusher:connection_established") {
@@ -84,7 +92,21 @@ sub init {
                 }
             }
         },
-
+        
+        on_wtimeout => sub {
+            my ($h) = @_;
+            $h->push_write(
+                $f->new(buffer => "", type => "ping")->to_bytes
+            );
+        },
+        
+        on_error => sub {
+            my ($h, $fatal, $msg) = @_;
+            print "fatal($fatal): $msg\n";
+            $h->destroy;
+            init();
+        },
+        
         on_eof => sub {
             my ($h) = @_;
 
